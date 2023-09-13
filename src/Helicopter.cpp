@@ -51,11 +51,16 @@ void Helicopter::rotatePropeller(const shared_ptr<Program> prog, shared_ptr<Matr
 
 	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
     MV->popMatrix();
-
 }
 
-void Helicopter::draw(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, double t)
+void Helicopter::draw(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, 
+                    double t, glm::vec3 origin)
 {
+    MV->pushMatrix();
+    MV->translate(origin);
+
+	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+    
     // setting the diffuse component to red (kd) in the shader
     glUniform3f(prog->getUniform("kd"), 1.0f, 0.0f, 0.0f);
 	body1.draw(prog);
@@ -70,4 +75,6 @@ void Helicopter::draw(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV
 
     rotatePropeller(prog, MV, t, prop2center, glm::vec3(0.0f, 0.0f, 1.0f));
     prop2.draw(prog);
+
+    MV->popMatrix();
 }

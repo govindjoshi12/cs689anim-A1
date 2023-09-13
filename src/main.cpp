@@ -16,6 +16,8 @@
 #include "MatrixStack.h"
 #include "Shape.h"
 #include "Helicopter.h"
+#include "HelicopterAnim.h"
+
 
 using namespace std;
 
@@ -27,7 +29,7 @@ int keyPresses[256] = {0}; // only for English keyboards!
 shared_ptr<Program> prog;
 shared_ptr<Camera> camera;
 
-shared_ptr<Helicopter> helicopter;
+HelicopterAnim animation;
 
 static void error_callback(int error, const char *description)
 {
@@ -98,7 +100,7 @@ static void init()
 	
 	camera = make_shared<Camera>();
 	
-	helicopter = make_shared<Helicopter>(RESOURCE_DIR);
+	animation = HelicopterAnim(RESOURCE_DIR);
 
 	// Initialize time.
 	glfwSetTime(0.0);
@@ -150,7 +152,7 @@ void render()
 	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
     glUniform3f(prog->getUniform("kd"), 1.0f, 0.0f, 0.0f);
 	
-	helicopter->draw(prog, MV, t);
+	animation.render(prog, MV, t);
 	
 	prog->unbind();
 
