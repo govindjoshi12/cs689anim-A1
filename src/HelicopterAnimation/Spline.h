@@ -7,7 +7,7 @@ class Spline
 {
 public:
     Spline();
-    Spline(vector<Keyframe> keyframes);
+    Spline(vector<glm::vec3> cps);
     virtual ~Spline();
     glm::vec3 splineFunc(float u);
     void drawSpline(bool drawLine = false, glm::vec3 color = glm::vec3(0.0f, 1.0f, 1.0f));

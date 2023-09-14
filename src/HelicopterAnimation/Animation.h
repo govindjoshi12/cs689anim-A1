@@ -13,12 +13,12 @@ public:
     Animation();
     Animation(string RESOURCE_DIR);
     virtual ~Animation();
-    void render(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, double t);
-    void toggleShowKeyframes();
+    void setSpline(Spline s);
+    void render(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, double t, bool showKeyframes);
+    vector<glm::vec3> getKeyframePositions();
 
 private:
     vector<Keyframe> keyframes;
     Helicopter helicopter;
     Spline spline;
-    bool showKeyframes;
 };

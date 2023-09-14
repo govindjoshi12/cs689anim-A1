@@ -28,6 +28,8 @@ shared_ptr<Program> prog;
 shared_ptr<Camera> camera;
 
 Animation animation;
+Spline spline;
+bool showKeyframesAndSpline = true;
 
 static void error_callback(int error, const char *description)
 {
@@ -43,7 +45,7 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
 	if(action == GLFW_PRESS) {
 	switch(key) {
 		case GLFW_KEY_K:
-			animation.toggleShowKeyframes();
+			showKeyframesAndSpline = !showKeyframesAndSpline;
 		}
 	}
 }
@@ -106,6 +108,8 @@ static void init()
 	camera = make_shared<Camera>();
 	
 	animation = Animation(RESOURCE_DIR);
+	spline = Spline(animation.getKeyframePositions());
+	animation.setSpline(spline);
 
 	// Initialize time.
 	glfwSetTime(0.0);
@@ -157,7 +161,7 @@ void render()
 	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
     glUniform3f(prog->getUniform("kd"), 1.0f, 0.0f, 0.0f);
 	
-	animation.render(prog, MV, t);
+	animation.render(prog, MV, t, showKeyframesAndSpline);
 	
 	prog->unbind();
 
@@ -173,6 +177,11 @@ void render()
 	glPushMatrix();
 	glLoadMatrixf(glm::value_ptr(MV->topMatrix()));
 	
+	// Draw Spline
+	if(showKeyframesAndSpline) {
+		spline.drawSpline();
+	}
+
 	// Draw frame
 	glLineWidth(2);
 	glBegin(GL_LINES);

@@ -10,22 +10,19 @@ Spline::Spline()
 {
 }
 
-Spline::Spline(vector<Keyframe> keyframes)
+Spline::Spline(vector<glm::vec3> cps)
 {
-    int numCps = (int)(keyframes.size());
-    for (int i = 0; i < numCps; i++)
-    {
-        controlPoints.push_back(keyframes[i].locvec());
-    }
+    controlPoints = cps;
 
-    B[0] = glm::vec4(0.0f, 2.0f, 0.0f, 0.0f);
-    B[1] = glm::vec4(-1.0f, 0.0f, 1.0f, 0.0f);
-    B[2] = glm::vec4(2.0f, -5.0f, 4.0f, 1.0f);
-    B[3] = glm::vec4(-1.0f, 3.0f, -3.0f, 1.0f);
-    B = 0.5f * B;
+	glm::mat4 catmullRom;
+	catmullRom[0] = glm::vec4(0, 2, 0, 0);
+	catmullRom[1] = glm::vec4(-1, 0, 1, 0);
+	catmullRom[2] = glm::vec4(2, -5, 4, -1);
+	catmullRom[3] = glm::vec4(-1, 3, -3, 1);
+    B = 0.5f * catmullRom;
 
     deltaU = 0.01;
-    uMax = numCps - 3;
+    uMax = (int)(controlPoints.size()) - 3;
 }
 
 Spline::~Spline()
@@ -62,7 +59,6 @@ void Spline::drawSpline(bool drawLine, glm::vec3 color)
         drawCPLine();
     }
 
-    glLineWidth(3.0f);
     glColor3f(color.x, color.y, color.z);
 
     glBegin(GL_LINE_STRIP);
@@ -72,7 +68,7 @@ void Spline::drawSpline(bool drawLine, glm::vec3 color)
         // cout << "---\n";
         for(int i = 0; i < 4; i++) {
             glm::vec3 point = controlPoints[i + cp];
-            Gk[i] = glm::vec4(point, 0.0f); 
+            Gk[i] = glm::vec4(point.x, point.y, point.z, 0.0f); 
             // cout << point.x << ", " << point.y << ", " << point.z << "\n";
         }
 
