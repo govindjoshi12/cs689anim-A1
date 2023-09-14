@@ -15,9 +15,7 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
-#include "Helicopter.h"
-#include "HelicopterAnim.h"
-
+#include "HelicopterAnimation/Animation.h"
 
 using namespace std;
 
@@ -29,7 +27,7 @@ int keyPresses[256] = {0}; // only for English keyboards!
 shared_ptr<Program> prog;
 shared_ptr<Camera> camera;
 
-HelicopterAnim animation;
+Animation animation;
 
 static void error_callback(int error, const char *description)
 {
@@ -40,6 +38,13 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
 {
 	if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
+	}
+
+	if(action == GLFW_PRESS) {
+	switch(key) {
+		case GLFW_KEY_K:
+			animation.toggleShowKeyframes();
+		}
 	}
 }
 
@@ -100,7 +105,7 @@ static void init()
 	
 	camera = make_shared<Camera>();
 	
-	animation = HelicopterAnim(RESOURCE_DIR);
+	animation = Animation(RESOURCE_DIR);
 
 	// Initialize time.
 	glfwSetTime(0.0);

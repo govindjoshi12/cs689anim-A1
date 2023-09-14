@@ -1,5 +1,5 @@
 #include "Helicopter.h"
-#include "Program.h"
+#include "../Program.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -9,6 +9,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;
+
+Helicopter::Helicopter() 
+{
+}
 
 Helicopter::Helicopter(string RESOURCE_DIR)
 {
@@ -54,7 +58,7 @@ void Helicopter::rotatePropeller(const shared_ptr<Program> prog, shared_ptr<Matr
 }
 
 void Helicopter::draw(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, 
-                    double t, glm::vec3 origin)
+                    double t, glm::vec3 origin, bool frozen)
 {
     MV->pushMatrix();
     MV->translate(origin);
@@ -70,11 +74,16 @@ void Helicopter::draw(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV
 
     glUniform3f(prog->getUniform("kd"), 0.5f, 0.5f, 0.5f);
 
-    rotatePropeller(prog, MV, t, prop1center, glm::vec3(0.0f, 1.0f, 0.0f));
+    if(!frozen) {
+        rotatePropeller(prog, MV, t, prop1center, glm::vec3(0.0f, 1.0f, 0.0f));
+    }
 	prop1.draw(prog);
 
-    rotatePropeller(prog, MV, t, prop2center, glm::vec3(0.0f, 0.0f, 1.0f));
+    if(!frozen) {
+        rotatePropeller(prog, MV, t, prop2center, glm::vec3(0.0f, 0.0f, 1.0f));
+    }
     prop2.draw(prog);
 
+    MV->translate(-1.0f * origin);
     MV->popMatrix();
 }

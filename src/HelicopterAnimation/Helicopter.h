@@ -1,6 +1,7 @@
-#include "Shape.h"
 #include <glm/glm.hpp>
-#include "MatrixStack.h"
+
+#include "../Shape.h"
+#include "../MatrixStack.h"
 
 using namespace std;
 
@@ -9,10 +10,11 @@ class Program;
 class Helicopter 
 {
 public:
+    Helicopter();
     Helicopter(string RESOURCE_DIR);
     virtual ~Helicopter();
     void rotatePropeller(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, double t, glm::vec3 origin, glm::vec3 axis);
-    void draw(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, double t, glm::vec3 origin);
+    void draw(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, double t, glm::vec3 origin, bool frozen);
 
 private:
     Shape body1;

@@ -1,4 +1,5 @@
-#include "Shape.h"
+#include "../Shape.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
