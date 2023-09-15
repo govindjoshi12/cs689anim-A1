@@ -94,20 +94,26 @@ void Animation::render(const shared_ptr<Program> prog, shared_ptr<MatrixStack> P
 	Keyframe kf = spline.interpolate(u);
 
 	P->pushMatrix();
+	P->loadIdentity();
 
 	MV->pushMatrix();
 	MV->loadIdentity();
 
 	if(helicopterCamera) {
-		P->pushMatrix();
-		P->translate(kf.locvec());
-		P->multMatrix(kf.rotmat());
-		MV->multMatrix(glm::inverse(P->topMatrix()));
-		P->popMatrix();
+		glm::mat4 heliCam(1.0f);
+
+		heliCam *= glm::translate(heliCam, kf.locvec());
+		heliCam *= glm::translate(heliCam, glm::vec3(3, 0, 0));
+		
+		heliCam *= glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0, 1, 0));
+		heliCam *= kf.rotmat();
+
+		MV->multMatrix(glm::inverse(heliCam));
+	} else {
+		camera->applyViewMatrix(MV);
 	}
 
 	camera->applyProjectionMatrix(P);
-	camera->applyViewMatrix(MV);
 
 	glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));

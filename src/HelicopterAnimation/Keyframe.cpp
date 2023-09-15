@@ -32,7 +32,7 @@ glm::quat Keyframe::rotquat()
     return rot;
 }
 
-glm::mat3 Keyframe::rotmat()
+glm::mat4 Keyframe::rotmat()
 {
     return glm::mat4_cast(glm::normalize(rot));
 }

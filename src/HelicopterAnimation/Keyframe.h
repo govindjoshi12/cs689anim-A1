@@ -16,7 +16,7 @@ public:
     virtual ~Keyframe();
     glm::vec3 locvec();
     glm::quat rotquat();
-    glm::mat3 rotmat();
+    glm::mat4 rotmat();
 
 private:
     glm::vec3 loc;

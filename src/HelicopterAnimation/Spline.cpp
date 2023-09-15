@@ -74,9 +74,6 @@ void Spline::buildTable()
 
 		usTable.push_back(make_pair(u1, currDist));
 	}
-
-	for(auto i: usTable)
-		cout << i.first << ", " << i.second << "\n";
 }
 
 float Spline::s2u(float s)
@@ -188,11 +185,9 @@ void Spline::drawSpline(bool drawLine, glm::vec3 color)
     for(int cp = 0; cp < uMax; cp++) {
 
         glm::mat4 Gk; 
-        // cout << "---\n";
         for(int i = 0; i < 4; i++) {
             glm::vec3 point = controlPoints[i + cp];
             Gk[i] = glm::vec4(point.x, point.y, point.z, 0.0f); 
-            // cout << point.x << ", " << point.y << ", " << point.z << "\n";
         }
 
         for(float u = 0.0; u <= 1.0; u += deltaU) {
