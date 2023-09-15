@@ -102,10 +102,10 @@ void Animation::render(const shared_ptr<Program> prog, shared_ptr<MatrixStack> P
 	if(helicopterCamera) {
 		glm::mat4 heliCam(1.0f);
 
+		// heliCam *= glm::translate(heliCam, glm::vec3(3, 0, 0));
 		heliCam *= glm::translate(heliCam, kf.locvec());
-		heliCam *= glm::translate(heliCam, glm::vec3(3, 0, 0));
 		
-		heliCam *= glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0, 1, 0));
+		// heliCam *= glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0, 1, 0));
 		heliCam *= kf.rotmat();
 
 		MV->multMatrix(glm::inverse(heliCam));

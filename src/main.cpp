@@ -34,6 +34,7 @@ bool alp = true;
 bool helicopterCamera = false;
 float sDelta = 1.0f;
 int numKeyframes = 10; // between 1 and 27
+bool pause = false;
 
 static void initAnimation() {
 	animation = Animation(RESOURCE_DIR, numKeyframes);
@@ -63,6 +64,8 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
 		case GLFW_KEY_R:
 			initAnimation();
 			break;
+		case GLFW_KEY_P:
+			pause = !pause;
 		case GLFW_KEY_SPACE:
 			helicopterCamera = !helicopterCamera;
 			break;
