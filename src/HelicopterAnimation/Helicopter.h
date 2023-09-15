@@ -13,8 +13,10 @@ public:
     Helicopter();
     Helicopter(string RESOURCE_DIR);
     virtual ~Helicopter();
-    void rotatePropeller(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, double t, glm::vec3 origin, glm::vec3 axis);
-    void draw(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, double t, glm::vec3 origin, bool frozen);
+    void rotatePropeller(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, 
+                        double t, glm::vec3 origin, glm::vec3 axis);
+    void draw(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, double t, bool frozen, 
+            glm::vec3 origin = glm::vec3(0.0f), glm::mat4 rotmat = glm::mat4(1.0f));
 
 private:
     Shape body1;

@@ -30,6 +30,16 @@ shared_ptr<Camera> camera;
 Animation animation;
 Spline spline;
 bool showKeyframesAndSpline = true;
+bool alp = true;
+bool helicopterCamera = false;
+float sDelta = 1.0f;
+int numKeyframes = 10; // between 1 and 27
+
+static void initAnimation() {
+	animation = Animation(RESOURCE_DIR, numKeyframes);
+	spline = Spline(animation.getKeyframes());
+	animation.setSpline(spline);
+}
 
 static void error_callback(int error, const char *description)
 {
@@ -46,6 +56,16 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
 	switch(key) {
 		case GLFW_KEY_K:
 			showKeyframesAndSpline = !showKeyframesAndSpline;
+			break;
+		case GLFW_KEY_S:
+			alp = !alp;
+			break;
+		case GLFW_KEY_R:
+			initAnimation();
+			break;
+		case GLFW_KEY_SPACE:
+			helicopterCamera = !helicopterCamera;
+			break;
 		}
 	}
 }
@@ -107,9 +127,7 @@ static void init()
 	
 	camera = make_shared<Camera>();
 	
-	animation = Animation(RESOURCE_DIR);
-	spline = Spline(animation.getKeyframePositions());
-	animation.setSpline(spline);
+	initAnimation();
 
 	// Initialize time.
 	glfwSetTime(0.0);
@@ -151,18 +169,10 @@ void render()
 	auto MV = make_shared<MatrixStack>();
 	
 	// Apply camera transforms
-	P->pushMatrix();
-	camera->applyProjectionMatrix(P);
-	MV->pushMatrix();
-	camera->applyViewMatrix(MV);
-	
 	prog->bind();
-	glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-    glUniform3f(prog->getUniform("kd"), 1.0f, 0.0f, 0.0f);
-	
-	animation.render(prog, MV, t, showKeyframesAndSpline);
-	
+
+	animation.render(prog, P, MV, camera, t, showKeyframesAndSpline, alp, helicopterCamera);
+
 	prog->unbind();
 
 	// Draw the frame and the grid with OpenGL 1.x (no GLSL)

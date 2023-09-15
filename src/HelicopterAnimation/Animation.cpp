@@ -4,49 +4,19 @@
 #include <GLFW/glfw3.h>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <cstdlib>
+#include <algorithm>
+#include <random>
+
 using namespace std;
 
 Animation::Animation() {
 	
 }
 
-Animation::Animation(string RESOURCE_DIR) {
+Animation::Animation(string RESOURCE_DIR, int numKeyframes) {
 	float dist = 5.0f;
-
-	// Doubling up on first and last points
-	keyframes.push_back(Keyframe(glm::vec3(0, 0, 0)));
-	keyframes.push_back(Keyframe(glm::vec3(0, 0, 0)));
-
-
-	// Todo 
-	// Red: x, blue: z, green: y
-	keyframes.push_back(Keyframe(glm::vec3(dist, 0, 0)));
-	keyframes.push_back(Keyframe(glm::vec3(0, dist, 0)));
-	keyframes.push_back(Keyframe(glm::vec3(0, dist, dist)));
-
-	keyframes.push_back(Keyframe(glm::vec3(-1 * dist, 0, 0)));
-	keyframes.push_back(Keyframe(glm::vec3(0, 0, dist)));
-	keyframes.push_back(Keyframe(glm::vec3(dist, dist, dist)));
-
-	keyframes.push_back(Keyframe(glm::vec3(dist, 0, dist)));
-	keyframes.push_back(Keyframe(glm::vec3(dist, dist, -1 * dist)));
-	keyframes.push_back(Keyframe(glm::vec3(-1 * dist, dist, -1 * dist)));
-
-	keyframes.push_back(Keyframe(glm::vec3(dist, 0, -1 * dist)));
-	keyframes.push_back(Keyframe(glm::vec3(-1 * dist, dist, dist)));
-	keyframes.push_back(Keyframe(glm::vec3(-1 * dist, 0, -1 * dist)));
-
-	keyframes.push_back(Keyframe(glm::vec3(0, 0, -1 * dist)));
-	keyframes.push_back(Keyframe(glm::vec3(0, dist, -1 * dist)));
-	keyframes.push_back(Keyframe(glm::vec3(-1 * dist, dist, 0)));
-
-	keyframes.push_back(Keyframe(glm::vec3(-1 * dist, 0, dist)));
-	keyframes.push_back(Keyframe(glm::vec3(dist, dist, 0)));
-	keyframes.push_back(Keyframe(glm::vec3(-1 * dist, 0, 0)));
-
-	keyframes.push_back(Keyframe(glm::vec3(0, 0, 0)));
-	keyframes.push_back(Keyframe(glm::vec3(0, 0, 0)));
-
+	create3x3x3RandomKeyframes(dist, numKeyframes);
 	helicopter = Helicopter(RESOURCE_DIR);
 }
 
@@ -55,33 +25,101 @@ Animation::~Animation()
     
 }
 
+void Animation::create3x3x3RandomKeyframes(float dist, int numKeyframes) {
+	vector<glm::vec3> points;
+	for(int i = -1; i <= 1; i++) {
+		for(int j = -1; j <= 1; j++) {
+			for(int k = -1; k <=1; k++) {
+				if(i == 0 && j == 0 && k == 0) {
+					continue;
+				}
+				points.push_back(glm::vec3(i * dist, j * dist, k * dist));
+			}
+		}
+	}
+	vector<glm::vec3> axes(points);
+
+	// https://stackoverflow.com/questions/6926433/how-to-shuffle-a-stdvector
+	auto rd = std::random_device {}; 
+	auto rng = std::default_random_engine { rd() };
+	shuffle(begin(points), end(points), rng);
+	shuffle(begin(axes), end(axes), rng);
+
+	// Doubling up on first and last points
+	keyframes.push_back(Keyframe(glm::vec3(0, 0, 0)));
+	keyframes.push_back(Keyframe(glm::vec3(0, 0, 0)));
+
+	numKeyframes = min(numKeyframes, (int)(points.size()));
+	for(int i = 0; i < numKeyframes; i++) {
+		// Generate a random angle between 0 and 360 that's a multiple of 10
+		float angle = (float)((int)(((double) rand() / (RAND_MAX)) * 36) * 10);
+		keyframes.push_back(Keyframe(points[i], angle, axes[i]));
+	}
+
+	keyframes.push_back(Keyframe(glm::vec3(0, 0, 0)));
+	keyframes.push_back(Keyframe(glm::vec3(0, 0, 0)));
+}
+
 void Animation::setSpline(Spline s) {
 	spline = s;
 }
 
-vector<glm::vec3> Animation::getKeyframePositions() {
-
-	vector<glm::vec3> positions;
-	for(Keyframe k: keyframes) {
-		positions.push_back(k.locvec());
-	}
-	return positions;
-
+vector<Keyframe> Animation::getKeyframes() {
+	return keyframes;
 }
 
-void Animation::render(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, double t, bool showKeyframes) {
+glm::mat3 Animation::getHelicopterMatrix() {
+	return currHelicopterMatrix;
+}
+
+void Animation::render(const shared_ptr<Program> prog, shared_ptr<MatrixStack> P,
+					 shared_ptr<MatrixStack> MV, shared_ptr<Camera> camera, 
+					 double t, bool showKeyframes, bool alp, bool helicopterCamera) {
+
+	float u;
+
+	if(alp) {
+		float tmax = (float)(keyframes.size());
+		float smax = spline.getSmax();
+		float tNorm = std::fmod(t, tmax) / tmax;
+		float sNorm = tNorm;
+		float s = smax * sNorm;
+		u = spline.s2u(s);
+	} else {
+		// Interpolation
+		float uMax = (double)(keyframes.size()) - 3;
+		u = fmod(t, uMax);
+	}
+
+	Keyframe kf = spline.interpolate(u);
+
+	P->pushMatrix();
+
+	MV->pushMatrix();
+	MV->loadIdentity();
+
+	if(helicopterCamera) {
+		P->pushMatrix();
+		P->translate(kf.locvec());
+		P->multMatrix(kf.rotmat());
+		MV->multMatrix(glm::inverse(P->topMatrix()));
+		P->popMatrix();
+	}
+
+	camera->applyProjectionMatrix(P);
+	camera->applyViewMatrix(MV);
+
+	glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+    glUniform3f(prog->getUniform("kd"), 1.0f, 0.0f, 0.0f);
+
+	helicopter.draw(prog, MV, t, false, kf.locvec(), kf.rotmat());
 
 	if(showKeyframes) {
 		for(Keyframe kf : keyframes) {
-			helicopter.draw(prog, MV, t, kf.locvec(), true);
+			helicopter.draw(prog, MV, t, true, kf.locvec(), kf.rotmat());
 		}
 		// Reset uniform
 		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 	}
-
-	// Animation
-	float uMax = (double)(keyframes.size());
-	float u = fmod(t, uMax);
-	glm::vec3 translatedPos = spline.splineFunc(u);
-	helicopter.draw(prog, MV, t, translatedPos, false);
 }

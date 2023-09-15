@@ -58,10 +58,11 @@ void Helicopter::rotatePropeller(const shared_ptr<Program> prog, shared_ptr<Matr
 }
 
 void Helicopter::draw(const shared_ptr<Program> prog, shared_ptr<MatrixStack> MV, 
-                    double t, glm::vec3 origin, bool frozen)
+                    double t, bool frozen, glm::vec3 origin, glm::mat4 rotmat)
 {
     MV->pushMatrix();
     MV->translate(origin);
+    MV->multMatrix(rotmat);
 
 	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
     
