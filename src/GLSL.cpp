@@ -163,7 +163,8 @@ int textFileWrite(const char *fn, const char *s)
 // https://www.tutorialspoint.com/utf-8-validation-in-cplusplus
 bool validUTF8(vector<int> &data) {
 	int cnt = 0;
-	for(int i = 0; i <data.size(); i++){
+	// Added an int case to data.size() to prevent compiler warning
+	for(int i = 0; i <(int)(data.size()); i++){
 		int x = data[i];
 		if(!cnt) {
 			if((x >> 5) == 0b110) {

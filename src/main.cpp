@@ -49,7 +49,6 @@ int numKeyframes = 10;
 int MAX_KEYFRAMES = 27;
 int MIN_KEYFRAMES = 5;
 
-bool pause = false; // No-op. TODO.
 bool rHC = true; // toggle with h
 
 // inc/dec in increments of intervalDelta in range [2.0, 6.0]
@@ -113,10 +112,9 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
 				// reset back to origin
 				glfwSetTime(0.0);
 				break;
-			case GLFW_KEY_P:
-				pause = !pause;
-				break;
 			case GLFW_KEY_SPACE:
+				// reset camera
+				camera = make_shared<Camera>();
 				helicopterCamera = !helicopterCamera;
 				break;
 			case GLFW_KEY_H:
