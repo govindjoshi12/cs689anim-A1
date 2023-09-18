@@ -16,6 +16,9 @@
 #include "MatrixStack.h"
 #include "Shape.h"
 #include "HelicopterAnimation/Animation.h"
+#include "HelicopterAnimation/SplineSurface.h"
+
+#include <random>
 
 using namespace std;
 
@@ -29,17 +32,60 @@ shared_ptr<Camera> camera;
 
 Animation animation;
 Spline spline;
-bool showKeyframesAndSpline = true;
-bool alp = true;
-bool helicopterCamera = false;
+SplineSurface splineSurface;
+
+// RESET CAMERA with C
+
+bool showKeyframesAndSpline = true; // toggle with k
+bool helicopterCamera = false; // toggle with space
 float sDelta = 1.0f;
-int numKeyframes = 10; // between 1 and 27
-bool pause = false;
+float yOffset = 5.0f;
+
+// Increment with =
+// Decrement with -
+// In range [5, 27]
+int numKeyframes = 10;
+// Constants
+int MAX_KEYFRAMES = 27;
+int MIN_KEYFRAMES = 5;
+
+bool pause = false; // No-op. TODO.
+bool rHC = true; // toggle with h
+
+// inc/dec in increments of intervalDelta in range [2.0, 6.0]
+float keyframeInterval = 5.0f; 
+
+float INTERVAL_DELTA = 1.0f;
+float MIN_KEYFRAME_INTERVAL = 2.0f;
+float MAX_KEYFRAME_INTERVAL = 6.0f;
+
+float tableDeltaU = 0.2f;
+float arcIntervalLength = 1.0f;
+bool GQ = true; // toggle with g
+auto rd = std::random_device();
+long unsigned int seed; // Reset with r
+
+ArcTraversal arc = NALP; // toggle with s
+
+// SPLINE SURFACE PARAMS
+
+// number of Cps on ONE side
+bool showSplineSurfaceCps = false; // toggle with M
+int SSCP_FACTOR = 3;
+// increases/dec with kf interval
+int splineSurfaceCps = keyframeInterval * SSCP_FACTOR; 
+int segments = 9;
+float splineSurfaceMaxHeight = 3.0f;
 
 static void initAnimation() {
-	animation = Animation(RESOURCE_DIR, numKeyframes);
-	spline = Spline(animation.getKeyframes());
+	animation = Animation(RESOURCE_DIR, numKeyframes, keyframeInterval, yOffset, seed);
+	spline = Spline(animation.getKeyframes(), tableDeltaU, arcIntervalLength, GQ);
 	animation.setSpline(spline);
+}
+
+static void initSplineSurface() {
+	splineSurface = SplineSurface(splineSurfaceCps, keyframeInterval / 2, 
+									splineSurfaceMaxHeight, glm::vec3(1, 0, -1), seed, segments);
 }
 
 static void error_callback(int error, const char *description)
@@ -54,21 +100,70 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
 	}
 
 	if(action == GLFW_PRESS) {
-	switch(key) {
-		case GLFW_KEY_K:
-			showKeyframesAndSpline = !showKeyframesAndSpline;
-			break;
-		case GLFW_KEY_S:
-			alp = !alp;
-			break;
-		case GLFW_KEY_R:
-			initAnimation();
-			break;
-		case GLFW_KEY_P:
-			pause = !pause;
-		case GLFW_KEY_SPACE:
-			helicopterCamera = !helicopterCamera;
-			break;
+		switch(key) {
+			case GLFW_KEY_C:
+				// Reset camera
+				camera = make_shared<Camera>();
+				break;
+			case GLFW_KEY_K:
+				showKeyframesAndSpline = !showKeyframesAndSpline;
+				break;
+			case GLFW_KEY_S:
+				arc = (ArcTraversal)((arc + 1) % AT_COUNT);
+				// reset back to origin
+				glfwSetTime(0.0);
+				break;
+			case GLFW_KEY_P:
+				pause = !pause;
+				break;
+			case GLFW_KEY_SPACE:
+				helicopterCamera = !helicopterCamera;
+				break;
+			case GLFW_KEY_H:
+				if(helicopterCamera) {
+					rHC = !rHC;
+				}
+				break;
+			case GLFW_KEY_M:
+				showSplineSurfaceCps = !showSplineSurfaceCps;
+				break;
+			case GLFW_KEY_COMMA:
+				if(keyframeInterval - INTERVAL_DELTA >= MIN_KEYFRAME_INTERVAL) {
+					keyframeInterval -= INTERVAL_DELTA;
+					splineSurfaceCps = (int)(keyframeInterval * SSCP_FACTOR);
+					initAnimation();
+					initSplineSurface();
+				}
+				break;
+			case GLFW_KEY_PERIOD:
+				if(keyframeInterval + INTERVAL_DELTA <= MAX_KEYFRAME_INTERVAL) {
+					keyframeInterval += INTERVAL_DELTA;
+					splineSurfaceCps =  (int)(keyframeInterval * SSCP_FACTOR);
+					initAnimation();
+					initSplineSurface();
+				}
+				break;
+			case GLFW_KEY_EQUAL:
+				if(numKeyframes + 1 < MAX_KEYFRAMES) {
+					numKeyframes++;
+					initAnimation();
+				}
+				break;
+			case GLFW_KEY_MINUS:
+				if(numKeyframes - 1 >= MIN_KEYFRAMES) {
+					numKeyframes--;
+					initAnimation();
+				}
+				break;
+			case GLFW_KEY_G:
+				GQ = !GQ;
+				initAnimation(); // Technically just need to rebuild table
+				break;
+			case GLFW_KEY_R:
+				seed = rd();
+				initAnimation();
+				initSplineSurface();
+				break;
 		}
 	}
 }
@@ -130,7 +225,9 @@ static void init()
 	
 	camera = make_shared<Camera>();
 	
+	seed = rd();
 	initAnimation();
+	initSplineSurface();
 
 	// Initialize time.
 	glfwSetTime(0.0);
@@ -171,10 +268,21 @@ void render()
 	auto P = make_shared<MatrixStack>();
 	auto MV = make_shared<MatrixStack>();
 	
+	P->pushMatrix();
+	P->loadIdentity();
+
+	MV->pushMatrix();
+	MV->loadIdentity();
+
+	camera->applyProjectionMatrix(P);
+
 	// Apply camera transforms
 	prog->bind();
 
-	animation.render(prog, P, MV, camera, t, showKeyframesAndSpline, alp, helicopterCamera);
+	splineSurface.draw(prog);
+
+	camera->applyViewMatrix(MV);
+	animation.render(prog, P, MV, camera, t, showKeyframesAndSpline, arc, helicopterCamera, rHC);
 
 	prog->unbind();
 
@@ -193,6 +301,11 @@ void render()
 	// Draw Spline
 	if(showKeyframesAndSpline) {
 		spline.drawSpline();
+	}
+
+	// Draw Spline Surface Points
+	if(showSplineSurfaceCps) {
+		splineSurface.drawCps();
 	}
 
 	// Draw frame

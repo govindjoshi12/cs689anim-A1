@@ -11,8 +11,11 @@ Spline::Spline()
 {
 }
 
-Spline::Spline(vector<Keyframe> keyframes)
+Spline::Spline(vector<Keyframe> keyframes, float tableDeltaU, float arcIntervalLength, bool GQ)
 {
+    this->tableDeltaU = tableDeltaU;
+    this->arcIntervalLength = arcIntervalLength;
+
     int numKfs = (int)(keyframes.size());
     for(Keyframe k: keyframes) {
         controlPoints.push_back(k.locvec());
@@ -37,16 +40,36 @@ Spline::Spline(vector<Keyframe> keyframes)
     deltaU = 0.01;
     uMax = (int)(controlPoints.size()) - 3;
 
-    buildTable();
+    buildTable(GQ);
 }
 
 Spline::~Spline()
 {
 }
 
-void Spline::buildTable()
+glm::vec3 Spline::computeSplinePoint(glm::mat4 G, glm::mat4 B, float u) {
+	glm::vec4 uVec(1.0f, u, u*u, u*u*u);
+	return G * (B * uVec);
+}
+
+float Spline::computeGQ(glm::mat4 G, glm::mat4 B, float u0, float u1) {
+    float aTerm = (u1 - u0) / 2.0f;
+    float bTerm = (u0 + u1) / 2.0f;
+    
+    float sum = 0.0f;
+    for(int i = 0; i < (int)(xVals.size()); i++) {
+        float u = aTerm * xVals[i] + bTerm;
+        glm::vec4 uPrimeVec(0.0f, 1.0f, 2.0f * u, 3.0f * pow(u, 2.0f));
+        float result = weights[i] * glm::length(G * (B * uPrimeVec));
+        sum += result;
+    }
+
+    sum *= aTerm;
+    return sum;
+}
+
+void Spline::buildTable(bool GQ)
 {
-	// INSERT CODE HERE
 	usTable.clear();
 
 	int ncps = (int)controlPoints.size();
@@ -55,7 +78,7 @@ void Spline::buildTable()
 
 	usTable.push_back(make_pair(0.0f, 0.0f));
 
-	float deltaU = 0.2;
+	float deltaU = tableDeltaU; // Can be global parameter
 	float currDist = 0;
 	for(float u1 = deltaU; u1 <= ncps - 3; u1 += deltaU) {
 
@@ -67,9 +90,16 @@ void Spline::buildTable()
 			Gk[i - fcp] = glm::vec4(controlPoints[i], 0.0f);
 		}
 
-		glm::vec3 pA = computeSplinePoint(Gk, B, u0 - fcp); // u0 - fcp necessary for "concatenated u"
-		glm::vec3 pB = computeSplinePoint(Gk, B, u1 - fcp);
-		float deltaS = glm::length(pB - pA);
+        float deltaS;
+
+        if(GQ) {
+            deltaS = computeGQ(Gk, B, u0 - fcp, u1 - fcp);
+        } else {
+            glm::vec3 pA = computeSplinePoint(Gk, B, u0 - fcp); // u0 - fcp necessary for "concatenated u"
+            glm::vec3 pB = computeSplinePoint(Gk, B, u1 - fcp);
+            deltaS = glm::length(pB - pA);
+        }
+
 		currDist = currDist + deltaS;
 
 		usTable.push_back(make_pair(u1, currDist));
@@ -118,7 +148,7 @@ void Spline::drawCPLine()
 }
 
 void Spline::drawSPoints() {
-    float ds = 1.0f;
+    float ds = arcIntervalLength; // can be global parameter
     glColor3f(1.0f, 0.0f, 0.0f);
     glPointSize(4.0f);
     glBegin(GL_POINTS);
@@ -141,11 +171,6 @@ void Spline::drawSPoints() {
         glVertex3fv(&P[0]);
     }
     glEnd();
-}
-
-glm::vec3 Spline::computeSplinePoint(glm::mat4 G, glm::mat4 B, float u) {
-	glm::vec4 uVec(1.0f, u, u*u, u*u*u);
-	return G * (B * uVec);
 }
 
 Keyframe Spline::interpolate(float u)

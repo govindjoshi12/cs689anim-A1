@@ -92,6 +92,28 @@ IF(NOT GLEW_DIR)
 	ENDIF()
 ENDIF()
 INCLUDE_DIRECTORIES(${GLEW_DIR}/include)
+
+# Get the EIGEN environment variable. Since EIGEN is a header-only library, we
+# just need to add it to the include directory.
+SET(EIGEN3_INCLUDE_DIR "$ENV{EIGEN3_INCLUDE_DIR}")
+IF(NOT EIGEN3_INCLUDE_DIR)
+	# The environment variable was not set
+	SET(ERR_MSG "Please point the environment variable EIGEN3_INCLUDE_DIR to the root directory of your EIGEN installation.")
+	IF(WIN32)
+		# On Windows, try the default location
+		MESSAGE(STATUS "Looking for EIGEN in ${DEF_DIR_EIGEN}")
+		IF(IS_DIRECTORY ${DEF_DIR_EIGEN})
+			MESSAGE(STATUS "Found!")
+			SET(EIGEN3_INCLUDE_DIR ${DEF_DIR_EIGEN})
+		ELSE()
+			MESSAGE(FATAL_ERROR ${ERR_MSG})
+		ENDIF()
+	ELSE()
+		MESSAGE(FATAL_ERROR ${ERR_MSG})
+	ENDIF()
+ENDIF()
+INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
+
 IF(WIN32)
 	# With prebuilt binaries
 	# Check for 32 vs 64 bit generator
