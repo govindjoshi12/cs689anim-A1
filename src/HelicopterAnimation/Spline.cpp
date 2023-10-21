@@ -23,10 +23,11 @@ Spline::Spline(vector<Keyframe> keyframes, float tableDeltaU, float arcIntervalL
     }
 
     // Take short route for quat interpolation
+    // Accidentally did 1 instead of i
     for(int i = 0; i < numKfs - 2; i++) {
-        float dot = glm::dot(quats[0], quats[1]);
+        float dot = glm::dot(quats[i], quats[i+1]);
         if(dot < 0.0f) {
-            quats[1] = -1.0f * quats[1];
+            quats[i+1] = -1.0f * quats[i+1];
         }
     }
 
