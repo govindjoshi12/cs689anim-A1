@@ -88,6 +88,8 @@ void SplineSurface::pushPointAndNormal(float u, float v, glm::mat4 Gx, glm::mat4
     glm::vec3 p = computePoint(u, v, Gx, Gy, Gz, B);
     glm::vec3 n = computeNormal(u, v, Gx, Gy, Gz, B);
 
+    // [1, 1, 1], [2, 3, 4], [1, 2, 3]
+    // 1, 1, 1, 2, 3, 4, 1, 2, 3
     posBuf.push_back(p.x);
     posBuf.push_back(p.y);
     posBuf.push_back(p.z);
